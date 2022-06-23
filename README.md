@@ -21,7 +21,7 @@ The state variables are:
  - `x`: horizontal position
  - `y`: vertical position
  - `theta`: heading angle (direction of travel)
- - `D`: resolution of motion
+ - `D`: resolution of motion, D = v_max * dt
 
 The control variable is:
  - `phi ∈ [-pi/5, pi/5]`: steering angle (w.r.t. the direction of travel).
