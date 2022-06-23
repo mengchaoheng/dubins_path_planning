@@ -12,15 +12,16 @@ Implemented car path planning with RRT, Hybrid A*, and Dubins Path algorithms. T
 with the dynamics
 
 ```python
-x[t+1]     = x[t]     + cos(theta[t])
-y[t+1]     = y[t]     + sin(theta[t])
-theta[t+1] = theta[t] + tan(phi[t]) / L
+x[t+1]     = x[t]     + D * cos(theta[t])
+y[t+1]     = y[t]     + D * sin(theta[t])
+theta[t+1] = theta[t] + D * tan(phi[t]) / L
 ```
 
 The state variables are:
  - `x`: horizontal position
  - `y`: vertical position
  - `theta`: heading angle (direction of travel)
+ - `D`: resolution of motion
 
 The control variable is:
  - `phi ∈ [-pi/5, pi/5]`: steering angle (w.r.t. the direction of travel).
