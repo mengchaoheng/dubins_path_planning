@@ -45,24 +45,35 @@ class Node:
 class HybridAstar:
     """ Hybrid A* search procedure. """
 
-    def __init__(self, car, grid, reverse, unit_theta=pi/12, dt=1e-2, check_dubins=1):
+    def __init__(self, car, grid, reverse, unit_theta=pi/12, check_dubins=5): 
         
+        self.coefficient=1.5 # This coefficient is introduced in order to jump to as many surrounding nodes as possible in each search.
         self.car = car
         self.grid = grid
-        self.reverse = reverse
-        self.unit_theta = unit_theta
-        self.dt = dt
-        self.check_dubins = check_dubins
-
+        self.reverse = reverse # backward enable
+        self.unit_theta = unit_theta # resolution of yaw 
+        self.dt = self.car.dt # sample time
+        self.D = self.car.D # resolution of motion
+        self.check_dubins = check_dubins # After every “check_dubins” iterations, check if the current pos and the end_pos can be directly connected by the dubin curve
+        # pos = [x, y, yaw angle(rad)]
         self.start = self.car.start_pos
         self.goal = self.car.end_pos
 
-        self.r = self.car.l / tan(self.car.max_phi)
-        self.drive_steps = int(sqrt(2)*self.grid.cell_size/self.dt) + 1
-        self.arc = self.drive_steps * self.dt
-        self.phil = [-self.car.max_phi, 0, self.car.max_phi]
-        self.ml = [1, -1]
+        self.r = self.car.l / tan(self.car.max_phi) # maybe Maximum turning radius？ 
 
+        # the number of times to integrate the model
+        self.drive_steps = int(self.coefficient*sqrt(2)*self.grid.cell_size/self.D) + 1   # sqrt(2)*self.grid.cell_size = The diagonal length of the map grid
+
+        print('drive_steps:', self.drive_steps)
+        print('grid.cell_size:', self.grid.cell_size)
+        self.arc = self.drive_steps * self.D  #search length
+        self.phil = [-self.car.max_phi, 0, self.car.max_phi] # search sequence of steer
+        # self.phil = [-self.car.max_phi, -self.car.max_phi*0.75, -self.car.max_phi*0.5, -self.car.max_phi*0.25, 0, self.car.max_phi*0.25, self.car.max_phi*0.5, self.car.max_phi*0.75, self.car.max_phi] # sum of steer point can be add.
+
+        # self.phil = [-self.car.max_phi, -self.car.max_phi*0.5, 0, self.car.max_phi*0.5, self.car.max_phi] # sum of steer point can be add.
+
+        self.ml = [1, -1] # search direction
+ 
         if reverse:
             self.comb = list(product(self.ml, self.phil))
         else:
@@ -223,7 +234,17 @@ class HybridAstar:
             open_.remove(best)
             closed_.append(best)
 
-            # check dubins path
+
+            # cancel one shot, return by dist smaller than 0.1 --mch
+            # x1, y1, theta1 = best.pos
+            # x2, y2, theta2 = self.goal
+            # if sqrt((x1 - x2)*(x1 - x2)  + (y1 - y2)*(y1 - y2)) < 0.5 : #and  abs(theta1 - theta2)<self.unit_theta
+            #     route = self.backtracking(best)
+            #     path = self.car.get_path(self.start, route)
+            #     return path, closed_
+
+
+            # check dubins path  # one shot --mch
             if count % self.check_dubins == 0:
                 solutions = self.dubins.find_tangents(best.pos, self.goal)
                 d_route, cost, valid = self.dubins.best_tangent(solutions)
@@ -255,7 +276,7 @@ class HybridAstar:
                     c = open_[open_.index(child)]
                     p = c.parent
                     for b in p.branches:
-                        if same_point(b[-1], c.pos[:2]):
+                        if same_point(b[-1], c.pos[:2], self.D):
                             p.branches.remove(b)
                             break
                     

@@ -23,8 +23,20 @@ class State:
 class SimpleCar:
     """ Car model and functions. """
 
-    def __init__(self, env, start_pos=None, end_pos=None, l=0.5, max_phi=pi/5):
+    def __init__(self, env, start_pos=None, end_pos=None, l=0.5, max_phi=pi*36/180):
 
+        # by mch
+        self.dt=0.01 # sample time
+
+        # Higher speed requires higher sampling frequency, in other words, D =dt * vel_max < res_of_map  should be within a certain range under the same map resolution.
+        self.vel_max=3 # the maximum speed of the vehicle, if sample time is 0.01, vel_max = 0.8-3m/s is very nice.
+        
+        # D= resolution of motion, that is, The length traveled by the vehicle model for one integration
+        # D affects step function, drive_steps, same_point function
+        self.D=self.dt * self.vel_max 
+        #
+
+        # param of car
         self.env = env
         self.l = float(l)
         self.max_phi = max_phi
@@ -117,18 +129,18 @@ class SimpleCar:
         state = State(pos, model)
 
         return state
-    
-    def step(self, pos, phi, m=1, dt=1e-2):
+    # dt=1e-2 = time interval of sample, v_m*dt=D= resolution of motion, that is, The length traveled by the vehicle model for one integration
+    # number of integral step=(resolution of map)/(v_m*dt) =0.05/10
+    def step(self, pos, phi, m=1): # m = +1 or -1 = forward or backward
         """ Car dynamics. """
 
         x, y, theta = pos
         dx     = cos(theta)
         dy     = sin(theta)
         dtheta = tan(phi) / self.l
-
-        x     += m*dt*dx
-        y     += m*dt*dy
-        theta += m*dt*dtheta
+        x     += m*self.D*dx
+        y     += m*self.D*dy
+        theta += m*self.D*dtheta
 
         return [x, y, theta]
     
@@ -152,7 +164,7 @@ class SimpleCar:
                 if not safe:
                     break
 
-                if same_point(pos[:2], goal[:2]):
+                if same_point(pos[:2], goal[:2], self.D):
                     pos = goal
                     break
             
@@ -173,7 +185,7 @@ class SimpleCar:
 
                 pos = self.step(pos, phi, m)
 
-                if same_point(pos[:2], goal[:2]):
+                if same_point(pos[:2], goal[:2], self.D):
                     pos = goal
                     break
         
@@ -205,7 +217,7 @@ def main():
 
     env = Environment()
 
-    car = SimpleCar(env, tc.start_pos, tc.end_pos)
+    car = SimpleCar(env, tc.start_pos2, tc.end_pos2)
 
     # example controls to demonstrate car dynamics
     controls = [

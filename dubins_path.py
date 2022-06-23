@@ -282,7 +282,7 @@ def main():
 
     env = Environment(tc.obs)
 
-    car = SimpleCar(env, tc.start_pos2, tc.end_pos2)
+    car = SimpleCar(env, tc.start_pos3, tc.end_pos3)
 
     dubins = DubinsPath(car)
 
